@@ -1,0 +1,294 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Volunteer Hours | Student Awards{% endblock %}
+
+{% block additional_styles %}
+<style>
+  .workflow-card {
+    background: #fff;
+    border: 1px solid #dce8ed;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(16, 44, 61, 0.06);
+  }
+
+  .activity-status { white-space: nowrap; }
+
+  .rejection-reason > summary {
+    list-style: none;
+  }
+
+  .rejection-reason > summary::-webkit-details-marker {
+    display: none;
+  }
+</style>
+{% endblock %}
+
+{% block subpage_content %}
+<main class="container-fluid py-2">
+  <header class="mb-4">
+    <p class="text-uppercase small fw-semibold text-primary mb-1">Student Awards</p>
+    <h1 class="h2 mb-1">Volunteer Hours</h1>
+    <p class="text-muted mb-0">Record your service and follow your verified impact.</p>
+  </header>
+
+  {% if student %}
+  <section class="workflow-card p-4 mb-4" aria-labelledby="progress-title">
+    <h2 class="h5 mb-1" id="progress-title">My volunteer hours</h2>
+    <p class="display-6 fw-semibold mb-0">{{ approved_hours }} <span class="fs-6 text-muted">approved hours</span></p>
+  </section>
+  {% else %}
+  <div class="alert alert-warning" role="status">
+    Your login is not linked to a student profile yet. Contact an administrator to link your profile before logging hours.
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <section class="col-12 col-xl-5" aria-labelledby="log-hours-title">
+      <div class="workflow-card p-4 h-100">
+        <h2 class="h5 mb-3" id="log-hours-title">Log volunteer hours</h2>
+        <form method="post" action="{{ url_for('submit_volunteer_hours') }}">
+          <div class="mb-3">
+            <label class="form-label" for="activity_id">Volunteer activity</label>
+            <select class="form-select" id="activity_id" name="activity_id"
+                    aria-describedby="activity-entry-help">
+              <option value="">Enter an unlisted activity</option>
+              {% for activity in activities %}
+              <option value="{{ activity.volunteerId }}">
+                {{ activity.name }} — {{ activity.location }} ({{ activity.date }})
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text" id="activity-entry-help">
+              Choose a listed activity or enter the details for an unlisted activity.
+            </div>
+          </div>
+
+          <div class="mb-3" data-unlisted-activity-field>
+            <label class="form-label" for="activity_name">Unlisted activity name</label>
+            <input class="form-control" type="text" id="activity_name" name="activity_name">
+          </div>
+
+          <div class="mb-3" data-unlisted-activity-field>
+            <label class="form-label" for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+          </div>
+
+          <div class="mb-3" data-unlisted-activity-field>
+            <label class="form-label" for="location">Location</label>
+            <input class="form-control" type="text" id="location" name="location">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="activity_date">Volunteer date</label>
+            <input class="form-control" type="date" id="activity_date" name="activity_date" required>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label" for="hours">Hours completed</label>
+            <input class="form-control" type="number" id="hours" name="hours"
+                   min="0.01" max="9999.99" step="0.01" required>
+          </div>
+
+          <button class="btn btn-primary w-100" type="submit">Submit hours for verification</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="col-12 col-xl-7" aria-labelledby="recent-activity-title">
+      <div class="workflow-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0" id="recent-activity-title">Recent activity</h2>
+          <span class="small text-muted">Approved hours count toward progress</span>
+        </div>
+        {% if recent_submissions %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Activity</th>
+                <th scope="col">Date</th>
+                <th scope="col">Hours</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in recent_submissions %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('volunteer_progress_view') }}#submission-{{ row.submission.submissionId }}">
+                    {{ row.activity_name }}
+                  </a>
+                </td>
+                <td>{{ row.submission.date }}</td>
+                <td>{{ row.submission.time }}</td>
+                <td class="activity-status">
+                  {% if row.submission.status == "Approved" %}
+                  <span class="badge text-bg-success">Approved</span>
+                  {% elif row.submission.status == "Rejected" %}
+                  <span class="badge text-bg-danger">Rejected</span>
+                  <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <span class="small text-danger text-wrap">
+                      {{ row.submission.rejectReason or "No rejection reason was recorded." }}
+                    </span>
+                    <button class="btn btn-sm btn-outline-primary"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#edit-submission-modal"
+                            data-resubmit-url="{{ url_for('resubmit_rejected_hours', submission_id=row.submission.submissionId) }}"
+                            data-activity-name="{{ row.activity_name }}"
+                            data-activity-id="{{ row.activity.volunteerId }}"
+                            data-description="{{ row.activity.description }}"
+                            data-location="{{ row.activity.location }}"
+                            data-rejection-reason="{{ row.submission.rejectReason or 'No rejection reason was recorded.' }}"
+                            data-activity-date="{{ row.submission.date }}"
+                            data-hours="{{ row.submission.time }}">
+                      Edit
+                    </button>
+                  </div>
+                  {% else %}
+                  <span class="badge text-bg-secondary">Pending approval</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No volunteer hours have been submitted yet.</p>
+        {% endif %}
+
+        <div class="modal fade" id="edit-submission-modal" tabindex="-1"
+             aria-labelledby="edit-submission-title" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="post" id="edit-submission-form">
+                <div class="modal-header">
+                  <h2 class="modal-title fs-5" id="edit-submission-title">Edit rejected submission</h2>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"
+                          aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="fw-semibold mb-1" id="edit-activity-name"></p>
+                  <p class="small text-danger" id="edit-rejection-reason"></p>
+                  <div class="mb-3">
+                    <label class="form-label" for="edit-activity-id">Volunteer activity</label>
+                    <select class="form-select" id="edit-activity-id" name="activity_id">
+                      <option value="">Enter an unlisted activity</option>
+                      {% for activity in activities %}
+                      <option value="{{ activity.volunteerId }}">
+                        {{ activity.name }} — {{ activity.location }} ({{ activity.date }})
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="mb-3" data-edit-unlisted-field>
+                    <label class="form-label" for="edit-activity-name-input">Unlisted activity name</label>
+                    <input class="form-control" id="edit-activity-name-input" name="activity_name" type="text">
+                  </div>
+                  <div class="mb-3" data-edit-unlisted-field>
+                    <label class="form-label" for="edit-description">Description</label>
+                    <textarea class="form-control" id="edit-description" name="description" rows="2"></textarea>
+                  </div>
+                  <div class="mb-3" data-edit-unlisted-field>
+                    <label class="form-label" for="edit-location">Location</label>
+                    <input class="form-control" id="edit-location" name="location" type="text">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="edit-activity-date">Volunteer date</label>
+                    <input class="form-control" id="edit-activity-date" name="activity_date"
+                           type="date" required>
+                  </div>
+                  <div>
+                    <label class="form-label" for="edit-hours">Hours completed</label>
+                    <input class="form-control" id="edit-hours" name="hours" type="number"
+                           min="0.01" max="9999.99" step="0.01" required>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-outline-secondary" type="button"
+                          data-bs-dismiss="modal">Cancel</button>
+                  <button class="btn btn-primary" type="submit">Save changes &amp; resubmit</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block subpage_scripts %}
+<script>
+  (() => {
+    const activitySelect = document.getElementById("activity_id");
+    const activityFields = document.querySelectorAll("[data-unlisted-activity-field]");
+    if (!activitySelect || !activityFields.length) return;
+
+    const fields = [...activityFields].flatMap((container) =>
+      [...container.querySelectorAll("input, textarea")]
+    );
+    const requiredFields = new Set(["activity_name", "description", "location"]);
+
+    const updateActivityFields = () => {
+      const isUnlisted = activitySelect.value === "";
+      for (const container of activityFields) {
+        container.hidden = !isUnlisted;
+      }
+      for (const field of fields) {
+        field.disabled = !isUnlisted;
+        field.required = isUnlisted && requiredFields.has(field.name);
+      }
+    };
+
+    activitySelect.addEventListener("change", updateActivityFields);
+    updateActivityFields();
+  })();
+
+  (() => {
+    const modal = document.getElementById("edit-submission-modal");
+    const editActivitySelect = document.getElementById("edit-activity-id");
+    const unlistedFields = modal?.querySelectorAll("[data-edit-unlisted-field]");
+    if (!modal || !editActivitySelect || !unlistedFields?.length) return;
+
+    const editFields = [...unlistedFields].flatMap((container) =>
+      [...container.querySelectorAll("input, textarea")]
+    );
+    const requiredFields = new Set(["activity_name", "description", "location"]);
+    const updateEditFields = () => {
+      const isUnlisted = editActivitySelect.value === "";
+      for (const container of unlistedFields) container.hidden = !isUnlisted;
+      for (const field of editFields) {
+        field.disabled = !isUnlisted;
+        field.required = isUnlisted && requiredFields.has(field.name);
+      }
+    };
+
+    editActivitySelect.addEventListener("change", updateEditFields);
+
+    modal.addEventListener("show.bs.modal", (event) => {
+      const trigger = event.relatedTarget;
+      if (!(trigger instanceof HTMLElement)) return;
+
+      document.getElementById("edit-submission-form").action =
+        trigger.dataset.resubmitUrl;
+      document.getElementById("edit-activity-name").textContent =
+        trigger.dataset.activityName;
+      document.getElementById("edit-rejection-reason").textContent =
+        `Rejection reason: ${trigger.dataset.rejectionReason}`;
+      editActivitySelect.value = trigger.dataset.activityId || "";
+      document.getElementById("edit-activity-name-input").value =
+        trigger.dataset.activityName || "";
+      document.getElementById("edit-description").value =
+        trigger.dataset.description || "";
+      document.getElementById("edit-location").value =
+        trigger.dataset.location || "";
+      document.getElementById("edit-activity-date").value =
+        trigger.dataset.activityDate;
+      document.getElementById("edit-hours").value = trigger.dataset.hours;
+      updateEditFields();
+    });
+  })();
+</script>
+{% endblock %}

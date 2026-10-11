@@ -5,21 +5,37 @@
 <div class="auth-shell">
   <div class="auth-panel">
     <a class="auth-back" href="{{ url_for('index_view') }}">← Home</a>
-    <div class="brand-wordmark">FastStarter</div>
-    <p class="auth-tagline">Create an account</p>
+    <div class="brand-wordmark">Student Awards</div>
+    <p class="auth-tagline">Create a student account to track service hours, progress, and recognition.</p>
 
     <form method="POST" action="{{ url_for('register_view') }}">
       <div class="mb-3">
         <label class="form-label" for="username">Username</label>
-        <input class="form-control" type="text" id="username" name="username" required autofocus>
+        <input class="form-control" type="text" id="username" name="username"
+               autocomplete="username" required autofocus>
+      </div>
+      <div class="row">
+        <div class="mb-3 col-sm-6">
+          <label class="form-label" for="fname">First name</label>
+          <input class="form-control" type="text" id="fname" name="fname" autocomplete="given-name" required>
+        </div>
+        <div class="mb-3 col-sm-6">
+          <label class="form-label" for="lname">Last name</label>
+          <input class="form-control" type="text" id="lname" name="lname" autocomplete="family-name" required>
+        </div>
       </div>
       <div class="mb-3">
         <label class="form-label" for="email">Email</label>
-        <input class="form-control" type="email" id="email" name="email" required>
+        <input class="form-control" type="email" id="email" name="email" autocomplete="email" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="degree">Degree / programme</label>
+        <input class="form-control" type="text" id="degree" name="degree" required>
       </div>
       <div class="mb-3">
         <label class="form-label" for="password">Password</label>
-        <input class="form-control" type="password" id="password" name="password" required>
+        <input class="form-control" type="password" id="password" name="password"
+               autocomplete="new-password" required>
       </div>
       <div class="d-grid gap-2 mb-3">
         <button class="btn btn-primary btn-lg" type="submit">Register</button>

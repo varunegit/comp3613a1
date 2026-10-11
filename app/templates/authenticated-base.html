@@ -4,57 +4,85 @@
 <style>
     body {
         overflow-x: hidden;
-        background: #f4f6f8;
+        background: #f3f8fa;
     }
 
     #wrapper {
-        display: flex;
+        display: block;
         min-height: 100vh;
     }
 
-    #sidebar {
-        min-width: 250px;
-        max-width: 250px;
-        min-height: 100vh;
-        transition: all 0.3s;
+    .authenticated-nav {
         background: var(--brand-sidebar);
-        color: #fff;
+        z-index: 1030;
     }
 
-    #sidebar.collapsed {
-        margin-left: -250px;
-    }
-
-    #sidebar .nav-link {
-        color: var(--brand-sidebar-text);
-        font-weight: 500;
-    }
-
-    #sidebar .nav-link:hover,
-    #sidebar .nav-link.active {
-        color: #fff;
-        background-color: color-mix(in srgb, var(--brand-accent) 55%, #000);
-        border-radius: 0.5rem;
-    }
-
-    #sidebar .brand-wordmark {
+    .authenticated-nav .navbar-brand {
         color: #fff;
         font-size: 1.25rem;
-        text-align: center;
-        margin: 1rem 0 1.5rem;
+        font-weight: 650;
+        letter-spacing: -0.03em;
+    }
+
+    .authenticated-nav .nav-link {
+        color: var(--brand-sidebar-text);
+        font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.55rem 0.75rem;
+    }
+
+    .authenticated-nav .nav-link:hover,
+    .authenticated-nav .nav-link.active {
+        color: #fff;
+        background-color: color-mix(in srgb, var(--brand-accent) 55%, #000);
+    }
+
+    .authenticated-nav .navbar-nav {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .authenticated-nav .account-actions {
+        white-space: nowrap;
     }
 
     #content {
-        width: 100%;
-        padding: 1rem;
-        transition: all 0.3s;
+        min-height: calc(100vh - 4rem);
+        padding: 1.25rem;
         display: flex;
         flex-direction: column;
-        background-color: #f4f6f8;
+        background-color: #f3f8fa;
     }
 
-    .navbar {
-        border-bottom: 1px solid #dee2e6;
+    @media (max-width: 767.98px) {
+        .authenticated-nav {
+            flex-wrap: wrap;
+        }
+
+        .authenticated-nav > .container-fluid {
+            flex-wrap: wrap;
+        }
+
+        .authenticated-nav .navbar-collapse {
+            flex-basis: 100%;
+            width: 100%;
+            padding-top: 0.75rem;
+        }
+
+        .authenticated-nav .navbar-nav {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .authenticated-nav .account-actions {
+            flex-wrap: wrap;
+            padding: 0.25rem 0 0.5rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        #content {
+            padding: 1rem;
+        }
     }
 </style>
 {% block additional_styles %}{% endblock %}
@@ -62,36 +90,75 @@
 
 {% block content %}
 <div id="wrapper">
-    <nav id="sidebar" class="p-3 d-flex flex-column vh-100">
-        <div class="brand-wordmark">FastStarter</div>
+    <nav class="navbar navbar-expand navbar-dark authenticated-nav sticky-top shadow-sm" aria-label="Main navigation">
+        <div class="container-fluid px-3 px-lg-4">
+            {% if user.role == "admin" %}
+            <a class="navbar-brand" href="{{ url_for('verify_volunteer_hours_view') }}">Student Awards</a>
+            {% else %}
+            <a class="navbar-brand" href="{{ url_for('log_volunteer_hours_view') }}">Student Awards</a>
+            {% endif %}
 
-        <ul class="nav nav-pills flex-column gap-2 flex-grow-1">
-            <li class="nav-item">
-                <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path.startswith('/app') }}"
-                   href="{{ url_for('user_home_view') }}">
-                    <span class="material-symbols-outlined me-2">home</span>
-                    Home
-                </a>
-            </li>
-            <li class="nav-item mt-auto">
-                <a class="nav-link d-flex align-items-center text-danger" href="{{ url_for('logout') }}">
-                    <span class="material-symbols-outlined me-2">logout</span>
-                    Logout
-                </a>
-            </li>
-        </ul>
-    </nav>
-
-    <div id="content">
-        <nav class="navbar navbar-expand-lg bg-white mb-4 px-3 rounded-3 shadow-sm">
-            <button class="btn btn-outline-secondary" id="menu-toggle" type="button">
-                <span class="material-symbols-outlined md-dark">menu</span>
-            </button>
-            <div class="ms-auto d-flex align-items-center gap-3">
-                <span class="fw-semibold">Welcome, {{ user.username }}</span>
+            <div class="navbar-collapse" id="authenticatedNavLinks">
+                <ul class="navbar-nav me-auto mb-0 ms-lg-3">
+                    {% if user.role == "admin" %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path.startswith('/admin/volunteer-hours') or request.url.path == '/admin' else '' }}"
+                           {% if request.url.path.startswith('/admin/volunteer-hours') or request.url.path == '/admin' %}aria-current="page"{% endif %}
+                           href="{{ url_for('verify_volunteer_hours_view') }}">
+                            <span class="material-symbols-outlined me-2" aria-hidden="true">fact_check</span>
+                            Verify Hours
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path == '/app/volunteer-hours' else '' }}"
+                           {% if request.url.path == '/app/volunteer-hours' %}aria-current="page"{% endif %}
+                           href="{{ url_for('log_volunteer_hours_view') }}">
+                            <span class="material-symbols-outlined me-2" aria-hidden="true">volunteer_activism</span>
+                            Log Hours
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path == '/app/awards' else '' }}"
+                           {% if request.url.path == '/app/awards' %}aria-current="page"{% endif %}
+                           href="{{ url_for('awards_view') }}">
+                            <span class="material-symbols-outlined me-2" aria-hidden="true">workspace_premium</span>
+                            Prizes &amp; Awards
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path == '/app/leaderboard' else '' }}"
+                           {% if request.url.path == '/app/leaderboard' %}aria-current="page"{% endif %}
+                           href="{{ url_for('leaderboard_view') }}">
+                            <span class="material-symbols-outlined me-2" aria-hidden="true">leaderboard</span>
+                            Leaderboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center {{ 'active' if request.url.path == '/app/progress' else '' }}"
+                           {% if request.url.path == '/app/progress' %}aria-current="page"{% endif %}
+                           href="{{ url_for('volunteer_progress_view') }}">
+                            <span class="material-symbols-outlined me-2" aria-hidden="true">monitoring</span>
+                            {% if user.role == "admin" %}
+                            Volunteer Progress
+                            {% else %}
+                            My Progress
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+                <div class="account-actions d-flex align-items-center gap-3">
+                    <span class="text-white fw-semibold">Welcome, {{ user.username }}</span>
+                    <a class="btn btn-sm btn-outline-light d-flex align-items-center" href="{{ url_for('logout') }}">
+                        <span class="material-symbols-outlined me-1" aria-hidden="true">logout</span>
+                        Logout
+                    </a>
+                </div>
             </div>
         </nav>
 
+        <div id="content">
         <div class="row">
             <div class="col-12">
                 {% for message in get_flashed_messages(request) %}
@@ -101,13 +168,9 @@
         </div>
 
         {% block subpage_content %}{% endblock %}
+        </div>
     </div>
 </div>
 
-<script>
-    document.getElementById("menu-toggle").addEventListener("click", function () {
-        document.getElementById("sidebar").classList.toggle("collapsed");
-    });
-</script>
 {% block subpage_scripts %}{% endblock %}
 {% endblock %}

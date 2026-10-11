@@ -1,17 +1,17 @@
 :root {
   /* Phase 5 theming: Guide overwrites these from docs/report.md preferences */
-  --brand-name: "FastStarter";
-  --brand-bg: #0c1218;
-  --brand-surface: #f7f4ef;
-  --brand-ink: #14202b;
-  --brand-muted: #6a7a88;
-  --brand-accent: #c45c26;
-  --brand-accent-2: #2a6f6b;
-  --brand-sidebar: #14202b;
-  --brand-sidebar-text: #a8b4bf;
-  --brand-font-display: "Fraunces", Georgia, serif;
-  --brand-font-body: "Source Sans 3", "Segoe UI", sans-serif;
-  --brand-radius: 0.85rem;
+  --brand-name: "Student Awards";
+  --brand-bg: #0b1d2a;
+  --brand-surface: #ffffff;
+  --brand-ink: #153244;
+  --brand-muted: #587482;
+  --brand-accent: #176b9b;
+  --brand-accent-2: #0f9f9a;
+  --brand-sidebar: #102c3d;
+  --brand-sidebar-text: #c1d7df;
+  --brand-font-display: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --brand-font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --brand-radius: 0.75rem;
 }
 
 *,
@@ -40,10 +40,10 @@ body {
   grid-template-rows: auto 1fr auto;
   color: var(--brand-surface);
   background:
-    linear-gradient(160deg, rgba(12, 18, 24, 0.55), rgba(12, 18, 24, 0.82)),
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(42, 111, 107, 0.45), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 80%, rgba(196, 92, 38, 0.28), transparent 50%),
-    linear-gradient(180deg, #1a2834 0%, #0c1218 100%);
+    linear-gradient(160deg, rgba(11, 29, 42, 0.42), rgba(11, 29, 42, 0.88)),
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(15, 159, 154, 0.38), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 80%, rgba(23, 107, 155, 0.32), transparent 50%),
+    linear-gradient(180deg, #173e54 0%, #0b1d2a 100%);
   position: relative;
   overflow: hidden;
 }
@@ -57,8 +57,8 @@ body {
       -18deg,
       transparent,
       transparent 48px,
-      rgba(247, 244, 239, 0.025) 48px,
-      rgba(247, 244, 239, 0.025) 49px
+      rgba(255, 255, 255, 0.035) 48px,
+      rgba(255, 255, 255, 0.035) 49px
     );
   pointer-events: none;
 }
@@ -178,9 +178,9 @@ body {
   right: -6%;
   top: 18%;
   background:
-    radial-gradient(circle at 35% 35%, rgba(247, 244, 239, 0.18), transparent 55%),
-    radial-gradient(circle at 70% 70%, rgba(42, 111, 107, 0.5), transparent 60%),
-    rgba(196, 92, 38, 0.15);
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.18), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(15, 159, 154, 0.5), transparent 60%),
+    rgba(23, 107, 155, 0.15);
   filter: blur(2px);
   animation: landing-drift 14s ease-in-out infinite alternate;
   pointer-events: none;
@@ -209,6 +209,66 @@ body {
   }
   .btn-landing:hover {
     transform: none;
+  }
+}
+
+.award-card:target {
+  scroll-margin-top: 5rem;
+  animation: award-card-highlight 2.5s ease-out;
+}
+
+#submission-details {
+  scroll-margin-top: 5rem;
+}
+
+.progress-level--bronze {
+  --level-color: #8c4a22;
+}
+
+.progress-level--silver {
+  --level-color: #aeb8c0;
+}
+
+.progress-level--gold {
+  --level-color: #e0ad21;
+}
+
+.progress-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+
+.progress-level__circle {
+  display: inline-block;
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid color-mix(in srgb, var(--level-color) 78%, #000);
+  border-radius: 50%;
+  background-color: var(--level-color);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+@keyframes award-card-highlight {
+  0%, 35% {
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 0.35rem rgba(13, 110, 253, 0.25);
+  }
+  100% {
+    outline-color: transparent;
+    box-shadow: var(--bs-box-shadow-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award-card:target {
+    animation: none;
+    outline: 3px solid var(--bs-primary);
+    outline-offset: 3px;
   }
 }
 
@@ -243,6 +303,16 @@ body {
 .auth-panel .auth-tagline {
   color: var(--brand-muted);
   margin-bottom: 1.5rem;
+}
+
+.auth-role-note {
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1.25rem;
+  border-left: 3px solid var(--brand-accent-2);
+  border-radius: 0.25rem;
+  background: #eef8f7;
+  color: var(--brand-ink);
+  font-size: 0.9rem;
 }
 
 .auth-panel .btn-primary {

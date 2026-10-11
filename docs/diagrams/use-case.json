@@ -1,0 +1,49 @@
+{
+  "system": "Student Awards",
+  "actors": [
+    {
+      "name": "Visitor",
+      "side": "left"
+    },
+    {
+      "name": "Student",
+      "side": "left"
+    },
+    {
+      "name": "Administrator",
+      "side": "right"
+    }
+  ],
+  "use_cases": [
+    {
+      "name": "Sign In",
+      "actors": ["Visitor", "Student", "Administrator"]
+    },
+    {
+      "name": "Register Student Account",
+      "actors": ["Visitor"]
+    },
+    {
+      "name": "Log Volunteer Hours",
+      "actors": ["Student"]
+    },
+    {
+      "name": "Verify Volunteer Hours",
+      "actors": ["Administrator"],
+      "extends": ["Log Volunteer Hours"]
+    },
+    {
+      "name": "View Leaderboard",
+      "actors": ["Student", "Administrator"]
+    },
+    {
+      "name": "View Volunteer Progress",
+      "actors": ["Student", "Administrator"]
+    },
+    {
+      "name": "Redeem Prizes & Awards",
+      "actors": ["Student"],
+      "includes": ["View Volunteer Progress"]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 from sqlmodel import Session, select, func
 from app.models.user import UserBase, User
+from app.models.student_awards import Administrator, Student
 from typing import Optional, Tuple
 from app.utilities.pagination import Pagination
 from app.schemas.user import UserUpdate
@@ -20,6 +21,66 @@ class UserRepository:
             return user_db
         except Exception as e:
             logger.error(f"An error occurred while saving user: {e}")
+            self.db.rollback()
+            raise
+
+    def create_student_account(
+        self,
+        user_data: UserBase,
+        *,
+        fname: str,
+        lname: str,
+        degree: str,
+    ) -> User:
+        try:
+            user_db = User.model_validate(user_data)
+            self.db.add(user_db)
+            self.db.flush()
+            if user_db.id is None:
+                raise RuntimeError("New user account was not assigned an ID")
+
+            self.db.add(
+                Student(
+                    userId=user_db.id,
+                    fname=fname,
+                    lname=lname,
+                    email=str(user_db.email),
+                    degree=degree,
+                )
+            )
+            self.db.commit()
+            self.db.refresh(user_db)
+            return user_db
+        except Exception as exc:
+            logger.error("An error occurred while saving student account: %s", exc)
+            self.db.rollback()
+            raise
+
+    def create_administrator_account(
+        self,
+        user_data: UserBase,
+        *,
+        fname: str,
+    ) -> User:
+        try:
+            user_db = User.model_validate(user_data)
+            self.db.add(user_db)
+            self.db.flush()
+            if user_db.id is None:
+                raise RuntimeError("New user account was not assigned an ID")
+
+            self.db.add(
+                Administrator(
+                    userId=user_db.id,
+                    fname=fname,
+                    email=str(user_db.email),
+                )
+            )
+            self.db.commit()
+            self.db.refresh(user_db)
+            return user_db
+        except Exception as exc:
+            logger.error("An error occurred while saving administrator account: %s", exc)
             self.db.rollback()
             raise
 

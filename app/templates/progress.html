@@ -1,0 +1,383 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Volunteer Progress | Student Awards{% endblock %}
+
+{% block subpage_content %}
+<main class="container-fluid py-2">
+  {% if approved_hours < 40 %}
+  {% set display_level = "Bronze" %}
+  {% set display_milestone = "Silver" %}
+  {% set display_target = 40 %}
+  {% elif approved_hours < 60 %}
+  {% set display_level = "Silver" %}
+  {% set display_milestone = "Gold" %}
+  {% set display_target = 60 %}
+  {% else %}
+  {% set display_level = "Gold" %}
+  {% set display_milestone = None %}
+  {% set display_target = 60 %}
+  {% endif %}
+  <header class="mb-4">
+    <p class="text-uppercase small fw-semibold text-primary mb-1">Student Awards</p>
+    <h1 class="h2 mb-1">Volunteer Progress</h1>
+    {% if student %}
+    <p class="text-muted mb-0">{{ student.fname }} {{ student.lname }}'s verified service and submissions.</p>
+    {% else %}
+    <p class="text-muted mb-0">Approved hours count toward milestones and awards.</p>
+    {% endif %}
+  </header>
+
+  {% if is_admin %}
+  <section class="card border-0 shadow-sm mb-4" aria-labelledby="student-search-title">
+    <div class="card-body">
+      <h2 class="h5" id="student-search-title">Find a student</h2>
+      <form method="get" action="{{ url_for('volunteer_progress_view') }}"
+            class="row g-2 align-items-end"
+            data-student-search-url="{{ url_for('student_search_suggestions') }}">
+        <div class="col-12 col-md-8 col-lg-6">
+          <label class="form-label" for="student-search">Student name or student ID</label>
+          <input class="form-control" id="student-search" name="search" type="search"
+                 value="{{ search_query }}" placeholder="e.g. Alex Smith or 12345"
+                 autocomplete="off" aria-controls="student-search-suggestions">
+          <div id="student-search-suggestions" class="list-group mt-1"
+               role="list" aria-live="polite"></div>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+        {% if search_query %}
+        <div class="col-auto">
+          <a class="btn btn-outline-secondary" href="{{ url_for('volunteer_progress_view') }}">Clear</a>
+        </div>
+        {% endif %}
+      </form>
+
+      {% if search_query %}
+      <div class="mt-3" aria-live="polite">
+        {% if search_results %}
+        <p class="small text-muted mb-2">Select a student to view their progress.</p>
+        <ul class="list-group">
+          {% for result in search_results %}
+          <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>{{ result.fname }} {{ result.lname }} <span class="text-muted">· ID {{ result.studentId }}</span></span>
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('volunteer_progress_view') }}?student_id={{ result.studentId }}">
+              View progress
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No students matched “{{ search_query }}”.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if student %}
+  <section class="card border-0 shadow-sm mb-4" aria-labelledby="progress-title">
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <h2 class="h5 mb-1" id="progress-title">Approved volunteer hours</h2>
+          <p class="display-6 fw-semibold mb-0">{{ approved_hours }} <span class="fs-6 text-muted">hours</span></p>
+        </div>
+        <div class="text-end">
+          {% if display_milestone %}
+          <span class="small text-muted">Next milestone: {{ display_milestone }}</span>
+          {% else %}
+          <span class="small text-muted">Highest level reached</span>
+          {% endif %}
+          <div class="fw-semibold">{{ [approved_hours, display_target] | min }} / {{ display_target }} hours</div>
+        </div>
+      </div>
+      <div class="progress mt-3" role="progressbar"
+           aria-label="Approved hours toward next milestone"
+           aria-valuenow="{{ [approved_hours, display_target] | min }}"
+           aria-valuemin="0" aria-valuemax="{{ display_target }}">
+        {% set progress_percent = (approved_hours / display_target * 100) | int %}
+        <div class="progress-bar bg-info" style="width: {{ [progress_percent, 100] | min }}%"></div>
+      </div>
+      <p class="text-center fw-semibold mt-2 mb-0">
+        <span class="progress-level progress-level--{{ display_level | lower }}">
+          <span class="progress-level__circle" aria-hidden="true"></span>
+          Current level: {{ display_level }}
+        </span>
+      </p>
+      {% if next_award %}
+      <div class="border-top mt-4 pt-3">
+        <div class="row g-3 align-items-center">
+          <div class="col">
+            <p class="small text-uppercase fw-semibold text-primary mb-1">
+              Next award requires {{ next_award.requiredHours - approved_hours }} more hours
+            </p>
+            <h3 class="h6 mb-1">{{ next_award.name }}</h3>
+            <p class="text-muted mb-0">{{ next_award.description }}</p>
+          </div>
+          {% if not is_admin %}
+          <div class="col-auto">
+            <a class="btn btn-outline-primary"
+               href="{{ url_for('awards_view') }}#award-{{ next_award.awardId }}">
+              View next award
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <p class="small text-muted border-top mt-4 pt-3 mb-0">
+        {% if active_award_count == 0 %}
+        No active awards are available right now.
+        {% elif not is_admin %}
+        You have reached every active award threshold.
+        {% else %}
+        This student has reached every active award threshold.
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm" aria-labelledby="activity-title">
+    <div class="card-header bg-white py-3">
+      <h2 class="h5 mb-0" id="activity-title">Recent activity</h2>
+    </div>
+    <div class="card-body p-0">
+      {% if recent_submissions %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">Activity</th>
+              <th scope="col">Date</th>
+              <th scope="col">Hours</th>
+              <th scope="col">Status and next step</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in recent_submissions %}
+            <tr id="submission-{{ row.submission.submissionId }}">
+              <td class="ps-4">{{ row.activity_name }}</td>
+              <td>{{ row.submission.date }}</td>
+              <td>{{ row.submission.time }}</td>
+              <td>
+                {% if row.submission.status == "Approved" %}
+                <span class="badge text-bg-success">Approved</span>
+                {% elif row.submission.status == "Rejected" %}
+                <span class="badge text-bg-danger">Rejected</span>
+                {% else %}
+                <span class="badge text-bg-secondary">Pending approval</span>
+                {% if is_admin %}
+                <a class="btn btn-sm btn-outline-primary ms-2"
+                   href="{{ url_for('review_volunteer_hours_view', submission_id=row.submission.submissionId) }}">
+                  Review submission
+                </a>
+                {% endif %}
+                {% endif %}
+                {% if row.submission.status == "Rejected" and not is_admin %}
+                  {% if row.submission.rejectReason %}
+                  <p class="small text-danger mt-2 mb-2">Reason: {{ row.submission.rejectReason }}</p>
+                  {% endif %}
+                  <button class="btn btn-sm btn-outline-primary"
+                          type="button"
+                          data-bs-toggle="modal"
+                          data-bs-target="#progress-edit-submission-modal"
+                          data-resubmit-url="{{ url_for('resubmit_rejected_hours', submission_id=row.submission.submissionId) }}"
+                          data-activity-id="{{ row.activity.volunteerId }}"
+                          data-activity-name="{{ row.activity.name }}"
+                          data-description="{{ row.activity.description }}"
+                          data-location="{{ row.activity.location }}"
+                          data-rejection-reason="{{ row.submission.rejectReason or 'No rejection reason was recorded.' }}"
+                          data-activity-date="{{ row.submission.date }}"
+                          data-hours="{{ row.submission.time }}">
+                    Edit
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted p-4 mb-0">No volunteer hours have been submitted yet.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% if not is_admin %}
+  <div class="modal fade" id="progress-edit-submission-modal" tabindex="-1"
+       aria-labelledby="progress-edit-submission-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" id="progress-edit-submission-form">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="progress-edit-submission-title">Edit rejected submission</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="small text-danger" id="progress-edit-rejection-reason"></p>
+            <div class="mb-3">
+              <label class="form-label" for="progress-edit-activity-id">Volunteer activity</label>
+              <select class="form-select" id="progress-edit-activity-id" name="activity_id">
+                <option value="">Enter an unlisted activity</option>
+                {% for activity in activities %}
+                <option value="{{ activity.volunteerId }}">
+                  {{ activity.name }} — {{ activity.location }} ({{ activity.date }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3" data-progress-edit-unlisted-field>
+              <label class="form-label" for="progress-edit-activity-name">Unlisted activity name</label>
+              <input class="form-control" id="progress-edit-activity-name"
+                     name="activity_name" type="text">
+            </div>
+            <div class="mb-3" data-progress-edit-unlisted-field>
+              <label class="form-label" for="progress-edit-description">Description</label>
+              <textarea class="form-control" id="progress-edit-description"
+                        name="description" rows="2"></textarea>
+            </div>
+            <div class="mb-3" data-progress-edit-unlisted-field>
+              <label class="form-label" for="progress-edit-location">Location</label>
+              <input class="form-control" id="progress-edit-location"
+                     name="location" type="text">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="progress-edit-date">Volunteer date</label>
+              <input class="form-control" id="progress-edit-date" name="activity_date"
+                     type="date" required>
+            </div>
+            <div>
+              <label class="form-label" for="progress-edit-hours">Hours completed</label>
+              <input class="form-control" id="progress-edit-hours" name="hours"
+                     type="number" min="0.01" max="9999.99" step="0.01" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button"
+                    data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" type="submit">Save changes &amp; resubmit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% elif is_admin %}
+  <div class="alert alert-info" role="status">
+    Choose a student from the <a href="{{ url_for('leaderboard_view') }}">leaderboard</a> to view their progress.
+  </div>
+  {% else %}
+  <div class="alert alert-warning" role="status">
+    Your login is not linked to a student profile yet. Contact an administrator to link your profile.
+  </div>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block subpage_scripts %}
+<script>
+  (() => {
+    const form = document.querySelector("[data-student-search-url]");
+    const input = document.getElementById("student-search");
+    const suggestions = document.getElementById("student-search-suggestions");
+    if (!form || !input || !suggestions) return;
+
+    let debounceTimer;
+    let activeRequest;
+    const progressUrl = "{{ url_for('volunteer_progress_view') }}";
+
+    input.addEventListener("input", () => {
+      window.clearTimeout(debounceTimer);
+      if (activeRequest) activeRequest.abort();
+      suggestions.replaceChildren();
+
+      const query = input.value.trim();
+      if (!query) return;
+
+      debounceTimer = window.setTimeout(async () => {
+        activeRequest = new AbortController();
+        try {
+          const endpoint = new URL(form.dataset.studentSearchUrl, window.location.origin);
+          endpoint.searchParams.set("search", query);
+          const response = await fetch(endpoint, {
+            headers: { "Accept": "application/json" },
+            signal: activeRequest.signal
+          });
+          if (!response.ok) {
+            throw new Error(`Student search failed (${response.status}).`);
+          }
+
+          const students = await response.json();
+          if (!students.length) {
+            const empty = document.createElement("div");
+            empty.className = "list-group-item text-muted";
+            empty.textContent = "No matching students.";
+            suggestions.append(empty);
+            return;
+          }
+
+          for (const student of students) {
+            const link = document.createElement("a");
+            link.className = "list-group-item list-group-item-action";
+            link.href = `${progressUrl}?student_id=${encodeURIComponent(student.student_id)}`;
+            link.textContent = `${student.name} · ID ${student.student_id}`;
+            suggestions.append(link);
+          }
+        } catch (error) {
+          if (error.name === "AbortError") return;
+          const message = document.createElement("div");
+          message.className = "list-group-item text-danger";
+          message.textContent = "Unable to search students. Please try again.";
+          suggestions.append(message);
+        }
+      }, 200);
+    });
+  })();
+
+  (() => {
+    const modal = document.getElementById("progress-edit-submission-modal");
+    const activitySelect = document.getElementById("progress-edit-activity-id");
+    const unlistedFields = modal?.querySelectorAll("[data-progress-edit-unlisted-field]");
+    if (!modal || !activitySelect || !unlistedFields?.length) return;
+
+    const fields = [...unlistedFields].flatMap((container) =>
+      [...container.querySelectorAll("input, textarea")]
+    );
+    const requiredFields = new Set(["activity_name", "description", "location"]);
+    const updateUnlistedFields = () => {
+      const isUnlisted = activitySelect.value === "";
+      for (const container of unlistedFields) container.hidden = !isUnlisted;
+      for (const field of fields) {
+        field.disabled = !isUnlisted;
+        field.required = isUnlisted && requiredFields.has(field.name);
+      }
+    };
+
+    activitySelect.addEventListener("change", updateUnlistedFields);
+    modal.addEventListener("show.bs.modal", (event) => {
+      const trigger = event.relatedTarget;
+      if (!(trigger instanceof HTMLElement)) return;
+
+      document.getElementById("progress-edit-submission-form").action =
+        trigger.dataset.resubmitUrl;
+      activitySelect.value = trigger.dataset.activityId || "";
+      document.getElementById("progress-edit-activity-name").value =
+        trigger.dataset.activityName || "";
+      document.getElementById("progress-edit-description").value =
+        trigger.dataset.description || "";
+      document.getElementById("progress-edit-location").value =
+        trigger.dataset.location || "";
+      document.getElementById("progress-edit-rejection-reason").textContent =
+        `Rejection reason: ${trigger.dataset.rejectionReason}`;
+      document.getElementById("progress-edit-date").value =
+        trigger.dataset.activityDate;
+      document.getElementById("progress-edit-hours").value =
+        trigger.dataset.hours;
+      updateUnlistedFields();
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Leaderboard | Student Awards{% endblock %}
+
+{% block subpage_content %}
+<main class="container-fluid py-2">
+  <header class="mb-4">
+    <p class="text-uppercase small fw-semibold text-primary mb-1">Student Awards</p>
+    <h1 class="h2 mb-1">Leaderboard</h1>
+    <p class="text-muted mb-0">Students ranked by approved volunteer hours.</p>
+  </header>
+
+  <div class="row g-4 align-items-start mb-4">
+    <div class="col-12 col-lg-8">
+      <label class="form-label fw-semibold" for="leaderboard-search">Search students</label>
+      <input class="form-control" id="leaderboard-search" type="search"
+             placeholder="Search by student name or ID"
+             aria-controls="leaderboard-table">
+      <p class="form-text mb-0" id="leaderboard-search-status" aria-live="polite">
+        Showing all {{ leaderboard | length }} students.
+      </p>
+    </div>
+    {% if not is_admin and your_rank %}
+    <div class="col-12 col-lg-4">
+      <section class="card border-primary shadow-sm" aria-labelledby="your-rank-title">
+        <div class="card-body text-center">
+          {% if your_rank.approved_hours < 40 %}
+          {% set your_level = "Bronze" %}
+          {% elif your_rank.approved_hours < 60 %}
+          {% set your_level = "Silver" %}
+          {% else %}
+          {% set your_level = "Gold" %}
+          {% endif %}
+          <p class="text-uppercase small fw-semibold text-primary mb-2" id="your-rank-title">Your rank</p>
+          <p class="display-6 fw-semibold mb-1">#{{ your_rank.rank }}</p>
+          <p class="mb-3">{{ your_rank.approved_hours }} approved hours</p>
+          <p class="mb-3">
+            <span class="progress-level progress-level--{{ your_level | lower }}">
+              <span class="progress-level__circle" aria-hidden="true"></span>
+              {{ your_level }}
+            </span>
+          </p>
+          <a class="btn btn-outline-primary" href="{{ url_for('volunteer_progress_view') }}">View progress</a>
+        </div>
+      </section>
+    </div>
+    {% endif %}
+  </div>
+
+  <section class="card border-0 shadow-sm" aria-labelledby="leaderboard-title">
+    <div class="card-body p-0">
+      <h2 class="visually-hidden" id="leaderboard-title">Volunteer hour rankings</h2>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="leaderboard-table">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="ps-4">Rank</th>
+              <th scope="col">Student</th>
+              <th scope="col">Level</th>
+              <th scope="col" class="text-end pe-4">Approved hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in leaderboard %}
+              {% if row.approved_hours < 40 %}
+              {% set row_level = "Bronze" %}
+              {% elif row.approved_hours < 60 %}
+              {% set row_level = "Silver" %}
+              {% else %}
+              {% set row_level = "Gold" %}
+              {% endif %}
+              <tr class="{{ 'table-primary' if row.is_current_user else '' }}"
+                data-leaderboard-row
+                data-student-search="{{ row.student.fname }} {{ row.student.lname }} {{ row.student.studentId }}">
+              <th scope="row" class="ps-4">{{ row.rank }}</th>
+              <td>
+                {% if is_admin and row.student.studentId %}
+                <a href="{{ url_for('volunteer_progress_view') }}?student_id={{ row.student.studentId }}">
+                  {{ row.student.fname }} {{ row.student.lname }}
+                </a>
+                {% else %}
+                {{ row.student.fname }} {{ row.student.lname }}
+                {% endif %}
+                {% if row.is_current_user %}
+                <span class="badge text-bg-primary ms-2">You · {{ user.username }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="progress-level progress-level--{{ row_level | lower }}">
+                  <span class="progress-level__circle" aria-hidden="true"></span>
+                  {{ row_level }}
+                </span>
+              </td>
+              <td class="text-end pe-4 fw-semibold">{{ row.approved_hours }} hrs</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-4">No student profiles are available yet.</td>
+            </tr>
+            {% endfor %}
+            {% if leaderboard %}
+            <tr id="leaderboard-no-results" hidden>
+              <td colspan="4" class="text-center text-muted py-4">No students match your search.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block subpage_scripts %}
+<script>
+  (() => {
+    const search = document.getElementById("leaderboard-search");
+    const status = document.getElementById("leaderboard-search-status");
+    const rows = [...document.querySelectorAll("[data-leaderboard-row]")];
+    const noResults = document.getElementById("leaderboard-no-results");
+    if (!search || !status) return;
+
+    search.addEventListener("input", () => {
+      const query = search.value.trim().toLocaleLowerCase();
+      let visibleCount = 0;
+
+      for (const row of rows) {
+        const matches = row.dataset.studentSearch.toLocaleLowerCase().includes(query);
+        row.hidden = !matches;
+        if (matches) visibleCount += 1;
+      }
+
+      if (noResults) noResults.hidden = visibleCount > 0;
+      status.textContent = query
+        ? `Showing ${visibleCount} of ${rows.length} students.`
+        : `Showing all ${rows.length} students.`;
+    });
+  })();
+</script>
+{% endblock %}

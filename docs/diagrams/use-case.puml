@@ -1,0 +1,42 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam actorBorderColor #1B365D
+skinparam actorFontColor #1E232D
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #1B365D
+skinparam usecaseFontColor #1E232D
+skinparam rectangleBorderColor #1B365D
+skinparam rectangleBackgroundColor #F8FAFC
+skinparam arrowColor #1B365D
+
+actor "Visitor" as Visitor
+actor "Student" as Student
+
+rectangle "Student Awards" {
+  usecase "Sign In" as Sign_In
+  usecase "Register Student Account" as Register_Student_Account
+  usecase "Log Volunteer Hours" as Log_Volunteer_Hours
+  usecase "Verify Volunteer Hours" as Verify_Volunteer_Hours
+  usecase "View Leaderboard" as View_Leaderboard
+  usecase "View Volunteer Progress" as View_Volunteer_Progress
+  usecase "Redeem Prizes & Awards" as Redeem_Prizes_Awards
+}
+
+actor "Administrator" as Administrator
+
+Visitor --> Sign_In
+Student --> Sign_In
+Sign_In <-- Administrator
+Visitor --> Register_Student_Account
+Student --> Log_Volunteer_Hours
+Verify_Volunteer_Hours <-- Administrator
+Verify_Volunteer_Hours ..> Log_Volunteer_Hours : <<extend>>
+Student --> View_Leaderboard
+View_Leaderboard <-- Administrator
+Student --> View_Volunteer_Progress
+View_Volunteer_Progress <-- Administrator
+Student --> Redeem_Prizes_Awards
+Redeem_Prizes_Awards ..> View_Volunteer_Progress : <<include>>
+
+@enduml

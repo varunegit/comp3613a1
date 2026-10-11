@@ -372,9 +372,11 @@ async def config_clear_cache_action(request: Request):
 
 def _seed_demo_users() -> tuple[int, int]:
     from app.database import get_cli_session
+    from app.models.student_awards import Administrator, Student
     from app.repositories.user import UserRepository
     from app.schemas.user import AdminCreate, RegularUserCreate
     from app.utilities.security import encrypt_password
+    from sqlmodel import select
 
     demo_users = [
         ("bob", "bob@example.com", "bobpass", "regular_user"),
@@ -385,17 +387,55 @@ def _seed_demo_users() -> tuple[int, int]:
     with get_cli_session() as session:
         repo = UserRepository(session)
         for username, email, password, role in demo_users:
-            if repo.get_by_username(username):
-                skipped += 1
-                continue
-            payload_cls = AdminCreate if role == "admin" else RegularUserCreate
-            repo.create(
-                payload_cls(
+            user = repo.get_by_username(username)
+            if user is None:
+                payload_cls = AdminCreate if role == "admin" else RegularUserCreate
+                payload = payload_cls(
                     username=username,
                     email=email,
                     password=encrypt_password(password),
                     role=role,
                 )
-            )
-            created += 1
+                if role == "admin":
+                    repo.create_administrator_account(payload, fname="Administrator")
+                else:
+                    repo.create_student_account(
+                        payload,
+                        fname="Bob",
+                        lname="Martinez",
+                        degree="General Studies",
+                    )
+                created += 1
+                continue
+
+            if role == "admin":
+                profile = session.exec(
+                    select(Administrator).where(Administrator.userId == user.id)
+                ).first()
+                if profile is None and user.id is not None:
+                    session.add(
+                        Administrator(
+                            userId=user.id,
+                            fname="Administrator",
+                            email=user.email,
+                        )
+                    )
+                    session.commit()
+            else:
+                profile = session.exec(
+                    select(Student).where(Student.userId == user.id)
+                ).first()
+                if profile is None and user.id is not None:
+                    session.add(
+                        Student(
+                            userId=user.id,
+                            fname="Bob",
+                            lname="Martinez",
+                            email=user.email,
+                            degree="General Studies",
+                        )
+                    )
+                    session.commit()
+
+            skipped += 1
     return created, skipped

@@ -84,7 +84,7 @@ Defaults use a local SQLite file (`database.db`). Change `SECRET_KEY` before any
 
 ### 4. Initialise the database (Python CLI)
 
-Creates tables (drops existing by default) **and seeds demo users**:
+Creates tables (drops existing by default) and seeds demo users, Student Awards profiles, volunteer activities, approved volunteer-hour records, and awards/prizes:
 
 ```bash
 python manage.py init
@@ -94,6 +94,13 @@ python manage.py init
 |----------|-------------|--------------|
 | `bob`    | `bobpass`   | regular_user |
 | `admin`  | `adminpass` | admin        |
+| `student01`–`student20` | `studentpass` | regular_user |
+
+The leaderboard seed contains 21 students total: `bob` (shown as Bob Martinez) plus the 20 `student01`–`student20` accounts, each with a realistic sample name and approved volunteer hours. The `bob` demo account has at least 30 approved hours and five eligible prize redemptions in its history. The seed also provides 18 volunteer activities, 15 awards/prizes, and at least 10 distinct pending volunteer submissions for the administrator review queue.
+
+Student self-registration collects the profile details required by the ERD and creates the linked Student record. Students and administrators use the same sign-in form; the account's assigned role and linked profile determine which workspace opens. Administrator accounts are provisioned separately (the demo account is `admin` / `adminpass`).
+
+The signed-in student's leaderboard row is highlighted and labeled with their login username. Volunteer levels are shown as Bronze, Silver, and Gold based on approved hours; progress toward the next level is shown on Volunteer Progress.
 
 Flags:
 
@@ -102,7 +109,7 @@ python manage.py init --no-drop   # create/seed without dropping
 python manage.py init --no-seed   # tables only (skip demo users)
 ```
 
-Seeding skips usernames that already exist. Add more rows in `cmd_seed` in `app/cli.py`. `python manage.py seed` still works if you only want to (re)insert demo users.
+Seeding skips usernames, student profiles, activities, submissions, and awards that already exist. `python manage.py init --no-drop` safely adds missing demo data without dropping existing tables. Add more rows in `cmd_seed` in `app/cli.py`. `python manage.py seed` still works if you only want to (re)insert demo data.
 
 ```bash
 python manage.py users
